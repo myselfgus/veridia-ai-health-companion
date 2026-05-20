@@ -1,3 +1,14 @@
 
 # Bootstrap marker
 .bootstrap-complete
+
+# Local dependencies and build artifacts
+node_modules/
+dist/
+.wrangler/
+.eslintcache
+tsconfig.tsbuildinfo
+
+# Local environment
+.env
+.env.*

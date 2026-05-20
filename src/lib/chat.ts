@@ -72,7 +72,7 @@ class ChatService {
       }
       if (!response.ok) {
         const errorBody = await response.text().catch(() => '');
-        console.error(`[ChatService] HTTP Error: ${response.status} ${errorBody}`);
+        console.warn(`[ChatService] HTTP ${response.status}: ${errorBody}`);
         throw new Error(`HTTP ${response.status}`);
       }
       if (onChunk && response.body) {
@@ -95,7 +95,7 @@ class ChatService {
       }
       return await response.json();
     } catch (error) {
-      console.error('[ChatService] Send failed:', error);
+      console.warn('[ChatService] Send unavailable:', error);
       return { success: false, error: 'Network communication failure' };
     }
   }
@@ -113,7 +113,7 @@ class ChatService {
       }
       if (!response.ok) {
         const errorBody = await response.text().catch(() => '');
-        console.error(`[ChatService] Fetch messages failed: ${response.status} ${errorBody}`);
+        console.warn(`[ChatService] Fetch messages unavailable: ${response.status} ${errorBody}`);
         if (response.status === 404) {
           await this.createSession();
           const retryResponse = await this.fetchWithRetry(`${this.baseUrl}/messages`);
@@ -128,7 +128,7 @@ class ChatService {
       }
       return await response.json();
     } catch (error) {
-      console.error('[ChatService] Fetch messages failed:', error);
+      console.warn('[ChatService] Fetch messages unavailable:', error);
       return {
         success: true,
         data: { messages: [], sessionId: this.sessionId, isProcessing: false, model: MODELS[0].id }

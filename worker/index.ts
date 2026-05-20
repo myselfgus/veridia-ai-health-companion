@@ -43,8 +43,7 @@ const safeLoadUserRoutes = async (app: Hono<{ Bindings: Env }>) => {
   nextRetryAt = now + RETRY_MS;
 
   try {
-    const spec = shouldRetry ? `./userRoutes?t=${now}` : "./userRoutes";
-    const mod = (await import(/* @vite-ignore */ spec)) as UserRoutesModule;
+    const mod = (await import("./userRoutes")) as UserRoutesModule;
     mod.userRoutes(app);
     mod.coreRoutes(app);
     userRoutesLoaded = true;
@@ -99,6 +98,8 @@ app.post("/api/client-errors", async (c) => {
   }
 });
 
+await safeLoadUserRoutes(app);
+
 app.notFound((c) =>
   c.json(
     {
@@ -113,7 +114,12 @@ export default {
   async fetch(request, env, ctx) {
     const pathname = new URL(request.url).pathname;
 
-    if (pathname.startsWith("/api/") && pathname !== "/api/health" && pathname !== "/api/client-errors") {
+    if (
+      !userRoutesLoaded &&
+      pathname.startsWith("/api/") &&
+      pathname !== "/api/health" &&
+      pathname !== "/api/client-errors"
+    ) {
       await safeLoadUserRoutes(app);
       if (userRoutesLoadError) {
         return new Response(

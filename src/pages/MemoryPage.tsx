@@ -1,92 +1,244 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BrainCircuit, Search, BookOpen, Bookmark, Activity, Heart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import {
+  Activity,
+  ArrowLeft,
+  BookOpen,
+  BrainCircuit,
+  CalendarDays,
+  ChevronRight,
+  ClipboardList,
+  HeartPulse,
+  Search,
+  ShieldCheck,
+} from 'lucide-react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { chatService } from '@/lib/chat';
 import type { SessionInfo } from '../../worker/types';
+
+const DEMO_SESSIONS: SessionInfo[] = [
+  {
+    id: 'demo-prevention-plan',
+    title: 'Preventive check-in and sleep routine',
+    createdAt: Date.now() - 1000 * 60 * 60 * 30,
+    lastActive: Date.now() - 1000 * 60 * 28,
+  },
+  {
+    id: 'demo-blood-pressure',
+    title: 'Blood pressure questions for appointment',
+    createdAt: Date.now() - 1000 * 60 * 60 * 72,
+    lastActive: Date.now() - 1000 * 60 * 60 * 7,
+  },
+  {
+    id: 'demo-labs',
+    title: 'Lab result explanation checklist',
+    createdAt: Date.now() - 1000 * 60 * 60 * 110,
+    lastActive: Date.now() - 1000 * 60 * 60 * 24,
+  },
+];
+
+const LIBRARY_ITEMS = [
+  {
+    title: 'Appointment preparation',
+    text: 'Turn symptoms, timelines, and medication notes into a concise clinician agenda.',
+    icon: ClipboardList,
+  },
+  {
+    title: 'Vitals and lifestyle tracking',
+    text: 'Record patterns without turning uncertainty into a diagnosis.',
+    icon: HeartPulse,
+  },
+  {
+    title: 'Longitudinal memory',
+    text: 'Keep durable questions and summaries available across conversations.',
+    icon: BrainCircuit,
+  },
+];
+
 export function MemoryPage() {
   const navigate = useNavigate();
-  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [sessions, setSessions] = useState<SessionInfo[]>(DEMO_SESSIONS);
   const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
     const loadData = async () => {
-      const res = await chatService.listSessions();
-      if (res.success && res.data) setSessions(res.data);
+      const response = await chatService.listSessions();
+      if (response.success && response.data && response.data.length > 0) {
+        setSessions(response.data);
+      }
     };
+
     loadData();
   }, []);
-  const filteredSessions = sessions.filter(s =>
-    s.title.toLowerCase().includes(searchQuery.toLowerCase())
+
+  const filteredSessions = useMemo(
+    () =>
+      sessions.filter((session) =>
+        session.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      ),
+    [searchQuery, sessions]
   );
+
+  const openSession = (sessionId: string) => {
+    if (!sessionId.startsWith('demo-')) {
+      chatService.switchSession(sessionId);
+    }
+    navigate('/');
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
-      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="group -ml-3 text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Button variant="ghost" className="rounded-xl" onClick={() => navigate('/')}>
+            <ArrowLeft className="size-4" />
+            Companion
           </Button>
-          <h1 className="text-4xl font-display font-bold tracking-tight">Health Memory</h1>
-          <p className="text-muted-foreground">Your persistent clinical insights and educational records.</p>
-        </div>
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search health records..." className="pl-10 h-11 bg-white border-input shadow-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link to="/">
+              New chat
+              <ChevronRight className="size-4" />
+            </Link>
+          </Button>
         </div>
       </header>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <section className="lg:col-span-8 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><BrainCircuit className="h-5 w-5 text-emerald-500" /> Clinical Records</h2>
-            <Badge variant="secondary" className="font-mono">{filteredSessions.length} Total</Badge>
+
+      <main className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8 lg:py-10">
+        <section className="min-w-0">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-5 flex size-12 items-center justify-center rounded-2xl border bg-muted">
+                <BookOpen className="size-6" />
+              </div>
+              <h1 className="text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
+                Health Memory
+              </h1>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">
+                Review saved sessions, reopen useful context, and keep patient questions ready for
+                the next conversation.
+              </p>
+            </div>
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search memory"
+                className="h-11 rounded-xl pl-10"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredSessions.map((session, i) => (
-              <motion.div key={session.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card className="cursor-pointer hover:border-emerald-500/30 transition-all hover:shadow-md h-full" onClick={() => { chatService.switchSession(session.id); navigate('/'); }}>
-                  <CardHeader className="p-5">
-                    <div className="flex justify-between items-start mb-2">
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-100">{new Date(session.lastActive).toLocaleDateString()}</Badge>
-                      <Bookmark className="h-4 w-4 text-muted-foreground opacity-50" />
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-3xl font-semibold">{sessions.length}</p>
+                <p className="mt-1 text-sm text-muted-foreground">records available</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-3xl font-semibold">3</p>
+                <p className="mt-1 text-sm text-muted-foreground">demo workflows</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardContent className="p-4">
+                <p className="text-3xl font-semibold">0</p>
+                <p className="mt-1 text-sm text-muted-foreground">diagnostic claims</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-8 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Saved sessions</h2>
+            <Badge variant="secondary" className="rounded-full">
+              {filteredSessions.length} shown
+            </Badge>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            {filteredSessions.map((session, index) => (
+              <motion.button
+                key={session.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04 }}
+                onClick={() => openSession(session.id)}
+                className="group rounded-2xl border bg-card p-4 text-left shadow-sm transition-colors hover:bg-muted/50"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="rounded-full">
+                        <CalendarDays className="size-3" />
+                        {new Date(session.lastActive).toLocaleDateString()}
+                      </Badge>
+                      {session.id.startsWith('demo-') && (
+                        <Badge variant="secondary" className="rounded-full">
+                          Demo
+                        </Badge>
+                      )}
                     </div>
-                    <CardTitle className="text-base line-clamp-2 leading-tight hover:text-emerald-600 transition-colors">{session.title}</CardTitle>
-                    <CardDescription className="text-xs pt-1">Stored {new Date(session.createdAt).toLocaleTimeString()}</CardDescription>
-                  </CardHeader>
-                </Card>
-              </motion.div>
+                    <h3 className="mt-3 truncate text-base font-semibold">{session.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Created {new Date(session.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <ChevronRight className="mt-1 size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                </div>
+              </motion.button>
             ))}
+
             {filteredSessions.length === 0 && (
-              <div className="col-span-full py-16 text-center space-y-4 bg-muted/20 rounded-3xl border-2 border-dashed">
-                <Activity className="h-10 w-10 mx-auto text-muted-foreground/30" />
-                <p className="text-muted-foreground font-medium">No medical records found.</p>
+              <div className="rounded-2xl border border-dashed bg-muted/30 p-10 text-center">
+                <Activity className="mx-auto size-10 text-muted-foreground" />
+                <p className="mt-4 font-medium">No records match that search.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Try a broader term or start a new chat.</p>
               </div>
             )}
           </div>
         </section>
-        <aside className="lg:col-span-4 space-y-6">
-          <Card className="border-none shadow-soft glass overflow-hidden">
-            <CardHeader className="bg-emerald-600 text-white"><CardTitle className="text-lg flex items-center gap-2"><BookOpen className="h-5 w-5" /> Health Library</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-border">
-                {[{ title: "Blood Pressure Basics", tag: "Hypertension", icon: Heart }, { title: "Seasonal Wellness", tag: "Allergies", icon: Activity }].map((item, idx) => (
-                  <div key={idx} className="p-4 hover:bg-muted/50 cursor-pointer group flex gap-4">
-                    <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600"><item.icon className="h-5 w-5" /></div>
-                    <div><h4 className="text-sm font-medium group-hover:text-emerald-600">{item.title}</h4><Badge variant="outline" className="text-[10px] py-0">{item.tag}</Badge></div>
+
+        <aside className="flex flex-col gap-5">
+          <Alert className="rounded-2xl">
+            <ShieldCheck className="size-4" />
+            <AlertTitle>Memory boundary</AlertTitle>
+            <AlertDescription>
+              Saved content is for organization and follow-up. It is not a medical chart or diagnosis.
+            </AlertDescription>
+          </Alert>
+
+          <Card className="shadow-sm">
+            <CardHeader className="p-5">
+              <CardTitle className="text-base">Health library</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4 p-5 pt-0">
+              {LIBRARY_ITEMS.map((item, index) => (
+                <React.Fragment key={item.title}>
+                  <div className="flex gap-3">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted">
+                      <item.icon className="size-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.text}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
+                  {index < LIBRARY_ITEMS.length - 1 && <Separator />}
+                </React.Fragment>
+              ))}
             </CardContent>
           </Card>
-          <div className="bg-slate-900 text-white p-6 rounded-3xl space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-400">Optimization</h4>
-            <div className="flex justify-between items-end"><span className="text-3xl font-bold">{sessions.length}</span><span className="text-xs text-slate-400">Records Cached</span></div>
-            <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: '80%' }} className="h-full bg-emerald-500" /></div>
-          </div>
         </aside>
-      </div>
+      </main>
     </div>
   );
 }
