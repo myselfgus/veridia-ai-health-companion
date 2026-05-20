@@ -77,11 +77,7 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [
-    "bun add framer-motion@^12.23.0",
-    "bun add lucide-react@^0.525.0",
-    "bun add @modelcontextprotocol/sdk"
-];
+    const commands = [];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
