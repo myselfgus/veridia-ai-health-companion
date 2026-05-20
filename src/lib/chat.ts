@@ -19,17 +19,57 @@ class ChatService {
     if (!saved) localStorage.setItem(SESSION_STORAGE_KEY, this.sessionId);
     this.baseUrl = `/api/chat/${this.sessionId}`;
   }
+  private async fetchWithRetry(url: string, options: RequestInit = {}, retries = 3): Promise<Response> {
+    let lastError: any;
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(url, options);
+        if (res.status >= 500 && i < retries - 1) {
+          await new Promise(r => setTimeout(r, Math.pow(2, i) * 250));
+          continue;
+        }
+        return res;
+      } catch (e) {
+        lastError = e;
+        if (i < retries - 1) await new Promise(r => setTimeout(r, Math.pow(2, i) * 250));
+      }
+    }
+    throw lastError || new Error('Request failed after retries');
+  }
+  private async recoverOnRouteError(): Promise<boolean> {
+    try {
+      const res = await this.createSession();
+      if (res.success && res.data) {
+        this.switchSession(res.data.sessionId);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
   async sendMessage(
     message: string,
     model?: string,
     onChunk?: (chunk: string) => void
   ): Promise<ChatResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/chat`, {
+      let response = await this.fetchWithRetry(`${this.baseUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, model, stream: !!onChunk }),
       });
+      if (response.status === 500) {
+        const body = await response.clone().json().catch(() => ({}));
+        if (body?.error?.includes('Worker routes')) {
+          const recovered = await this.recoverOnRouteError();
+          if (recovered) {
+            response = await this.fetchWithRetry(`${this.baseUrl}/chat`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message, model, stream: !!onChunk }),
+            });
+          }
+        }
+      }
       if (!response.ok) {
         const errorBody = await response.text().catch(() => '');
         console.error(`[ChatService] HTTP Error: ${response.status} ${errorBody}`);
@@ -61,13 +101,22 @@ class ChatService {
   }
   async getMessages(): Promise<ChatResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/messages`);
+      let response = await this.fetchWithRetry(`${this.baseUrl}/messages`);
+      if (response.status === 500) {
+        const body = await response.clone().json().catch(() => ({}));
+        if (body?.error?.includes('Worker routes')) {
+          const recovered = await this.recoverOnRouteError();
+          if (recovered) {
+            response = await this.fetchWithRetry(`${this.baseUrl}/messages`);
+          }
+        }
+      }
       if (!response.ok) {
         const errorBody = await response.text().catch(() => '');
         console.error(`[ChatService] Fetch messages failed: ${response.status} ${errorBody}`);
         if (response.status === 404) {
           await this.createSession();
-          const retryResponse = await fetch(`${this.baseUrl}/messages`);
+          const retryResponse = await this.fetchWithRetry(`${this.baseUrl}/messages`);
           if (retryResponse.ok) {
             return await retryResponse.json();
           }
@@ -88,7 +137,7 @@ class ChatService {
   }
   async clearMessages(): Promise<ChatResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/clear`, { method: 'DELETE' });
+      const response = await this.fetchWithRetry(`${this.baseUrl}/clear`, { method: 'DELETE' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
@@ -109,7 +158,7 @@ class ChatService {
     firstMessage?: string
   ): Promise<{ success: boolean; data?: { sessionId: string; title: string }; error?: string }> {
     try {
-      const response = await fetch('/api/sessions', {
+      const response = await this.fetchWithRetry('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, sessionId, firstMessage })
@@ -121,7 +170,7 @@ class ChatService {
   }
   async listSessions(): Promise<{ success: boolean; data?: SessionInfo[]; error?: string }> {
     try {
-      const response = await fetch('/api/sessions');
+      const response = await this.fetchWithRetry('/api/sessions');
       return await response.json();
     } catch (error) {
       return { success: false, error: 'List retrieval failed' };

@@ -46,6 +46,8 @@ export function HomePage() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [activeSessionId, setActiveSessionId] = useState(chatService.getSessionId());
   const [isListening, setIsListening] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -66,14 +68,21 @@ export function HomePage() {
       const res = await chatService.getMessages();
       if (res.success && res.data) {
         setMessages(res.data.messages || []);
+        setConnectionError(false);
       } else {
-        setMessages([]);
+        setConnectionError(true);
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
       toast.error('Unable to load conversation history');
-      setMessages([]);
+      setConnectionError(true);
     }
+  };
+  const retryConnection = async () => {
+    setIsRetrying(true);
+    setConnectionError(false);
+    await loadMessages();
+    setIsRetrying(false);
   };
   const speak = (text: string) => {
     if (!('speechSynthesis' in window)) {
@@ -225,6 +234,14 @@ export function HomePage() {
           </Card>
         </aside>
         <main className="col-span-1 lg:col-span-9 flex flex-col gap-4 h-[calc(100vh-200px)]">
+          {connectionError && (
+            <div className="flex items-center justify-between rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-200">
+              <span>Clinical service temporarily unavailable.</span>
+              <Button size="sm" variant="outline" onClick={retryConnection} disabled={isRetrying} className="border-yellow-300 hover:bg-yellow-100">
+                {isRetrying ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null} Retry connection
+              </Button>
+            </div>
+          )}
           <Card className="flex-1 border-none shadow-soft glass dark:glass-dark overflow-hidden flex flex-col rounded-3xl relative">
             <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
               <AnimatePresence>
