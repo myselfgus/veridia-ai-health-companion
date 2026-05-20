@@ -214,12 +214,20 @@ export class ChatHandler {
    */
   private buildConversationMessages(userMessage: string, history: Message[]) {
     return [
-      { 
-        role: 'system' as const, 
-        content: 'You are a helpful AI assistant that helps users build and deploy web applications. You provide clear, concise guidance on development, deployment, and troubleshooting. Keep responses practical and actionable.' 
+      {
+        role: 'system' as const,
+        content: `You are Veridia, a professional and empathetic health companion.
+        Your goal is to provide clear, clinical-grade health guidance and wellness insights.
+        
+        Guidelines:
+        1. Use a structured, empathetic, and minimalist clinical tone.
+        2. Cross-reference health data using tools like 'web_search' or 'get_weather' when relevant (e.g., pollen counts, local health resources).
+        3. ALWAYS clarify that you provide health guidance and education, not diagnostic services.
+        4. If a user presents an emergency symptom, strongly advise seeking immediate professional medical attention.
+        5. Keep responses actionable and focused on the user's specific query.`
       },
-      ...history.slice(-5).map(m => ({ 
-        role: m.role, 
+      ...history.slice(-5).map(m => ({
+        role: m.role,
         content: m.content 
       })),
       { role: 'user' as const, content: userMessage }

@@ -5,10 +5,14 @@ import {
   ShieldCheck, 
   Activity, 
   History, 
-  BrainCircuit, 
-  User, 
+  BrainCircuit,
+  User,
   Menu,
   Plus,
+  Save,
+  ArrowUpRight,
+  Info,
+  ExternalLink,
   Trash2,
   Sparkles,
   Search
@@ -29,7 +33,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Toaster, toast } from 'sonner';
-import { chatService, MODELS, formatTime } from '@/lib/chat';
+import { chatService, MODELS, formatTime, renderToolCall } from '@/lib/chat';
 import type { Message, SessionInfo } from '../../worker/types';
 import { cn } from '@/lib/utils';
 export function HomePage() {
@@ -110,6 +114,14 @@ export function HomePage() {
       setMessages([]);
       loadSessions();
       toast.success('New health conversation started');
+    }
+  };
+
+  const saveToMemory = async (content: string) => {
+    const res = await chatService.saveToMemory(content);
+    if (res.success) {
+      toast.success('Saved to Health Memory');
+      loadSessions();
     }
   };
   const switchSession = (id: string) => {
@@ -239,6 +251,14 @@ export function HomePage() {
                         Ask Veridia about symptoms, nutrition, medication schedules, or exercise plans.
                       </p>
                     </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 max-w-sm">
+                      <div className="flex items-start gap-3 text-left">
+                        <Info className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+                        <p className="text-xs text-emerald-800 dark:text-emerald-300 leading-relaxed">
+                          Veridia is analyzing your recent session history to provide context-aware wellness suggestions.
+                        </p>
+                      </div>
+                    </div>
                     <div className="flex flex-wrap justify-center gap-2">
                       {['Analyze symptom', 'Diet plan', 'Medication info'].map(hint => (
                         <Button 
@@ -264,6 +284,21 @@ export function HomePage() {
                       msg.role === 'user' ? "justify-end" : "justify-start"
                     )}
                   >
+                    <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[70%]">
+                      {/* Tool Call Visualization */}
+                      {msg.toolCalls && msg.toolCalls.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-1">
+                          {msg.toolCalls.map((tc) => (
+                            <Badge 
+                              key={tc.id} 
+                              variant="secondary" 
+                              className="bg-slate-100 dark:bg-slate-800 text-[10px] font-mono py-0.5 flex items-center gap-1.5 border-none"
+                            >
+                              {renderToolCall(tc)}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     <div className={cn(
                       "max-w-[85%] md:max-w-[70%] rounded-2xl p-4 text-sm shadow-sm",
                       msg.role === 'user' 
@@ -271,12 +306,20 @@ export function HomePage() {
                         : "bg-white dark:bg-slate-800 border dark:border-slate-700 text-foreground rounded-tl-none"
                     )}>
                       {msg.content}
-                      <div className={cn(
-                        "text-[10px] mt-2 opacity-50",
+                      <div className="flex items-center justify-between mt-2">
+                        <div className={cn(
+                        "text-[10px] opacity-50",
                         msg.role === 'user' ? "text-white/80" : "text-muted-foreground"
                       )}>
                         {formatTime(msg.timestamp)}
+                        </div>
+                        {msg.role === 'assistant' && (
+                          <button onClick={() => saveToMemory(msg.content)} className="text-muted-foreground hover:text-emerald-500 transition-colors">
+                            <Save className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
+                    </div>
                     </div>
                   </motion.div>
                 ))}

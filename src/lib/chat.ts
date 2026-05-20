@@ -183,12 +183,24 @@ class ChatService {
       
       return await response.json();
     } catch (error) {
-      console.error('Failed to update model:', error);
-      return { success: false, error: 'Failed to update model' };
+      console.error('Failed to update model:', error);      return { success: false, error: 'Failed to update model' };
+    }
+  }
+
+  async saveToMemory(content: string): Promise<ChatResponse> {
+    try {
+      const firstSentence = content.split('.')[0].slice(0, 50) + '...';
+      return await this.createSession(
+        `Memory: ${firstSentence}`,
+        undefined,
+        content
+      );
+    } catch (error) {
+      console.error('Failed to save to memory:', error);
+      return { success: false, error: 'Failed to save insight' };
     }
   }
 }
-
 export const chatService = new ChatService();
 
 export const formatTime = (timestamp: number): string => {
@@ -218,18 +230,24 @@ export const generateSessionTitle = (firstUserMessage?: string): string => {
     : cleanMessage;
 
   return `${truncated} • ${dateTime}`;
-};
-
-export const renderToolCall = (toolCall: ToolCall): string => {
+};export const renderToolCall = (toolCall: ToolCall): string => {
   const result = toolCall.result as WeatherResult | MCPResult | ErrorResult | undefined;
+  const name = toolCall.name;
+  const friendlyName = name === 'web_search' ? 'Medical Search' : 
+                       name === 'get_weather' ? 'Env Analysis' : 
+                       name.replace(/_/g, ' ');
+
+  if (!result) return `⌛ ${friendlyName}`;
+  if ('error' in result) return `⚠️ ${friendlyName} Error`;
   
-  if (!result) return `⚠️ ${toolCall.name}: No result`;
-  if ('error' in result) return `❌ ${toolCall.name}: ${result.error}`;
-  if ('content' in result) return `🔧 ${toolCall.name}: Executed`;
   if (toolCall.name === 'get_weather') {
     const weather = result as WeatherResult;
-    return `🌤️ Weather in ${weather.location}: ${weather.temperature}°C, ${weather.condition}`;
+    return `🌡️ ${weather.location}: ${weather.temperature}°C, ${weather.condition}`;
   }
 
-  return `🔧 ${toolCall.name}: Done`;
+  if (toolCall.name === 'web_search') {
+    return `🔍 Search Complete`;
+  }
+
+  return `✅ ${friendlyName}`;
 };
