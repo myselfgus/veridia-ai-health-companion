@@ -1,6 +1,6 @@
 # Veridia Health
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/myselfgus/veridia-ai-health-companion)
 
 A production-ready AI-powered chat application built on Cloudflare Workers, Durable Objects, and OpenAI. Features real-time streaming responses, intelligent tool integration, session management, and MCP server connectivity.
 
@@ -107,6 +107,6 @@ Before first deploy, update `wrangler.jsonc` with your Cloudflare AI Gateway cre
 }
 ```
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/myselfgus/veridia-ai-health-companion)
 
 After deployment, your application will be available at `https://your-worker.your-subdomain.workers.dev`.
