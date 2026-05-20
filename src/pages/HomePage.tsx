@@ -12,7 +12,10 @@ import {
   Info,
   Sparkles,
   Search,
-  Loader2
+  Loader2,
+  Mic,
+  MicOff,
+  Volume2
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -42,6 +45,8 @@ export function HomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [activeSessionId, setActiveSessionId] = useState(chatService.getSessionId());
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     loadSessions();
@@ -69,6 +74,47 @@ export function HomePage() {
       toast.error('Unable to load conversation history');
       setMessages([]);
     }
+  };
+  const speak = (text: string) => {
+    if (!('speechSynthesis' in window)) {
+      toast.error('Voice output not supported');
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  };
+  const toggleVoiceInput = () => {
+    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      toast.error('Voice input not supported in this browser');
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const rec = new SpeechRec();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+    rec.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+      setIsListening(false);
+      toast.success('Voice captured');
+    };
+    rec.onerror = () => {
+      setIsListening(false);
+      toast.error('Voice input failed');
+    };
+    rec.onend = () => setIsListening(false);
+    recognitionRef.current = rec;
+    rec.start();
+    setIsListening(true);
+    toast.info('Listening...');
   };
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -144,8 +190,8 @@ export function HomePage() {
           </div>
         </div>
       </nav>
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 py-8 md:py-10">
-        <aside className="hidden lg:flex lg:col-span-3 flex-col gap-6 sticky top-24 h-[calc(100vh-160px)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <aside className="hidden lg:flex lg:col-span-3 flex-col gap-6 sticky top-24 h-[calc(100vh-200px)]">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold flex items-center gap-2"><History className="h-4 w-4" /> History</h3>
@@ -178,7 +224,7 @@ export function HomePage() {
             <p className="text-[10px] mt-1 opacity-90">Veridia is educational, not diagnostic. Always consult a professional.</p>
           </Card>
         </aside>
-        <main className="col-span-1 lg:col-span-9 flex flex-col gap-4 h-[calc(100vh-160px)]">
+        <main className="col-span-1 lg:col-span-9 flex flex-col gap-4 h-[calc(100vh-200px)]">
           <Card className="flex-1 border-none shadow-soft glass dark:glass-dark overflow-hidden flex flex-col rounded-3xl relative">
             <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
               <AnimatePresence>
@@ -193,14 +239,17 @@ export function HomePage() {
                   <div key={msg.id} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
                     <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[70%]">
                       {msg.toolCalls?.map((tc) => (
-                        <Badge key={tc.id} variant="secondary" className="w-fit text-[10px] py-0.5">{renderToolCall(tc)}</Badge>
+                        <Badge key={tc.id} variant="secondary" className="w-fit text-[10px] py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 animate-fade-in">{renderToolCall(tc)}</Badge>
                       ))}
                       <div className={cn("rounded-2xl p-4 text-sm shadow-sm", msg.role === 'user' ? "bg-emerald-600 text-white rounded-tr-none" : "bg-white dark:bg-slate-800 border text-foreground rounded-tl-none")}>
                         {msg.content}
-                        <div className="flex items-center justify-between mt-2 opacity-50 text-[10px]">
+                        <div className="flex items-center justify-between mt-2 opacity-60 text-[10px]">
                           {formatTime(msg.timestamp)}
                           {msg.role === 'assistant' && (
-                            <button onClick={() => saveToMemory(msg.content)} className="hover:text-emerald-500"><Save className="h-3 w-3" /></button>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => saveToMemory(msg.content)} className="hover:text-emerald-500 transition-colors"><Save className="h-3 w-3" /></button>
+                              <button onClick={() => speak(msg.content)} className="hover:text-emerald-500 transition-colors"><Volume2 className="h-3 w-3" /></button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -216,15 +265,12 @@ export function HomePage() {
                   </div>
                 )}
                 {isProcessing && !streamingContent && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex justify-start"
-                  >
-                    <div className="bg-white dark:bg-slate-800 border rounded-2xl rounded-tl-none p-4 flex items-center gap-3 text-sm text-muted-foreground shadow-sm">
-                      <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-                      <span>Veridia is analyzing...</span>
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                    <div className="bg-white dark:bg-slate-800 border rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-3 text-sm text-muted-foreground shadow-sm w-full max-w-[70%]">
+                      <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-700 rounded overflow-hidden">
+                        <motion.div className="h-full bg-emerald-600" animate={{ x: ['-100%', '100%'] }} transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }} />
+                      </div>
+                      <span className="text-xs font-medium tracking-wide">Veridia is thinking</span>
                     </div>
                   </motion.div>
                 )}
@@ -233,8 +279,13 @@ export function HomePage() {
             </div>
             <div className="p-4 bg-white/50 dark:bg-slate-900/50 border-t backdrop-blur-md">
               <form onSubmit={handleSend} className="relative max-w-4xl mx-auto flex gap-2">
-                <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask Veridia anything..." className="h-12 rounded-2xl bg-white dark:bg-slate-800 border-none px-6" disabled={isProcessing} />
-                <Button type="submit" disabled={!input.trim() || isProcessing} size="icon" className="h-12 w-12 rounded-2xl bg-emerald-600"><Send className="h-5 w-5" /></Button>
+                <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask Veridia anything..." className="h-12 rounded-2xl bg-white dark:bg-slate-800 border-none px-6 pr-20" disabled={isProcessing} />
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                  <Button type="button" variant="ghost" size="icon" onClick={toggleVoiceInput} className="h-9 w-9 rounded-full hover:bg-emerald-50" disabled={isProcessing}>
+                    {isListening ? <MicOff className="h-4 w-4 text-emerald-600" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                  <Button type="submit" disabled={!input.trim() || isProcessing} size="icon" className="h-9 w-9 rounded-full bg-emerald-600"><Send className="h-4 w-4" /></Button>
+                </div>
               </form>
               <div className="text-[10px] text-center text-muted-foreground mt-3 uppercase tracking-tighter">Note: AI request limits may apply.</div>
             </div>
