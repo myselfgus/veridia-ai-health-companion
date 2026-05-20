@@ -43,7 +43,7 @@ class ChatService {
         this.switchSession(res.data.sessionId);
         return true;
       }
-    } catch (_) {}
+    } catch (_) { /* intentional no-op */ }
     return false;
   }
   async sendMessage(

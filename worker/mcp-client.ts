@@ -1,5 +1,5 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse';
 interface MCPServerConfig {
   name: string;
   sseUrl: string;
