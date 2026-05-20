@@ -25,7 +25,7 @@ export class ChatHandler {
     this.accountId = accountId || this.extractAccountId(aiGatewayUrl);
   }
   private extractAccountId(baseUrl: string): string {
-    const match = baseUrl.match(/accounts\/([^\/]+)/);
+    const match = baseUrl.match(/accounts\/([^/]+)/);
     return match ? match[1] : '';
   }
   private mapToWorkersAIModel(modelId: string): string {
