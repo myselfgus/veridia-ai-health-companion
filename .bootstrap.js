@@ -79,7 +79,8 @@ function updateWranglerJsonc() {
 function runSetupCommands() {
     const commands = [
     "bun add framer-motion@^12.23.0",
-    "bun add lucide-react@^0.525.0"
+    "bun add lucide-react@^0.525.0",
+    "bun add @modelcontextprotocol/sdk"
 ];
     
     if (commands.length === 0) {
