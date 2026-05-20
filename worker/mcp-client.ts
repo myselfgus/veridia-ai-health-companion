@@ -4,14 +4,17 @@ interface MCPServerConfig {
   name: string;
   sseUrl: string;
 }
-const MCP_SERVERS: MCPServerConfig[] = [
-];
+const MCP_SERVERS: MCPServerConfig[] = [];
 export class MCPManager {
   private clients: Map<string, Client> = new Map();
   private toolMap: Map<string, string> = new Map();
   private initialized = false;
   async initialize() {
     if (this.initialized) return;
+    if (MCP_SERVERS.length === 0) {
+      this.initialized = true;
+      return;
+    }
     for (const serverConfig of MCP_SERVERS) {
       try {
         const transport = new SSEClientTransport(new URL(serverConfig.sseUrl));
@@ -30,14 +33,14 @@ export class MCPManager {
           }
         }
       } catch (error) {
-        console.error(`Failed to connect to MCP server ${serverConfig.name}:`, error);
+        console.error(`[MCP] Connection failure for ${serverConfig.name}:`, error);
       }
     }
     this.initialized = true;
   }
   async getToolDefinitions() {
     await this.initialize();
-    const allTools = [];
+    const allTools: any[] = [];
     for (const [serverName, client] of this.clients.entries()) {
       try {
         const toolsResult = await client.listTools();
@@ -58,7 +61,7 @@ export class MCPManager {
           }
         }
       } catch (error) {
-        console.error(`Error getting tools from ${serverName}:`, error);
+        console.error(`[MCP] Error retrieving tools from ${serverName}:`, error);
       }
     }
     return allTools;
@@ -67,11 +70,11 @@ export class MCPManager {
     await this.initialize();
     const serverName = this.toolMap.get(toolName);
     if (!serverName) {
-      throw new Error(`Tool ${toolName} not found in any MCP server`);
+      throw new Error(`Tool ${toolName} not found in registered MCP servers`);
     }
     const client = this.clients.get(serverName);
     if (!client) {
-      throw new Error(`Client for server ${serverName} not available`);
+      throw new Error(`MCP Client for ${serverName} is unavailable`);
     }
     try {
       const result = await client.callTool({
@@ -79,7 +82,7 @@ export class MCPManager {
         arguments: args
       });
       if (result.isError) {
-        throw new Error(`Tool execution failed: ${Array.isArray(result.content) ? result.content.map((c: any) => c.text).join('\n') : 'Unknown error'}`);
+        throw new Error(`Tool execution error: ${JSON.stringify(result.content)}`);
       }
       if (Array.isArray(result.content)) {
         return result.content
@@ -87,9 +90,10 @@ export class MCPManager {
           .map((c: any) => c.text)
           .join('\n');
       }
-      return 'No content returned';
+      return 'No response content';
     } catch (error) {
-      throw new Error(`Tool execution failed: ${String(error)}`);
+      console.error(`[MCP] Tool execution failure (${toolName}):`, error);
+      throw error;
     }
   }
 }

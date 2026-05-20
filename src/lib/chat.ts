@@ -1,29 +1,27 @@
 import type { Message, ChatState, ToolCall, WeatherResult, MCPResult, ErrorResult, SessionInfo } from '../../worker/types';
-
 export interface ChatResponse {
   success: boolean;
   data?: ChatState;
   error?: string;
 }
-
 export const MODELS = [
   { id: 'google-ai-studio/gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
   { id: 'google-ai-studio/gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
   { id: 'google-ai-studio/gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
 ];
-
+const SESSION_STORAGE_KEY = 'veridia_active_session';
 class ChatService {
   private sessionId: string;
   private baseUrl: string;
-
   constructor() {
-    this.sessionId = crypto.randomUUID();
+    const saved = localStorage.getItem(SESSION_STORAGE_KEY);
+    this.sessionId = saved || crypto.randomUUID();
+    if (!saved) localStorage.setItem(SESSION_STORAGE_KEY, this.sessionId);
     this.baseUrl = `/api/chat/${this.sessionId}`;
   }
-
   async sendMessage(
-    message: string, 
-    model?: string, 
+    message: string,
+    model?: string,
     onChunk?: (chunk: string) => void
   ): Promise<ChatResponse> {
     try {
@@ -32,90 +30,58 @@ class ChatService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, model, stream: !!onChunk }),
       });
-      
       if (!response.ok) {
+        console.error(`[ChatService] HTTP Error: ${response.status}`);
         throw new Error(`HTTP ${response.status}`);
       }
-
       if (onChunk && response.body) {
-        // Handle streaming response
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullResponse = '';
-
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-
             const chunk = decoder.decode(value, { stream: true });
-            if (chunk) {
-              fullResponse += chunk;
-              onChunk(chunk);
-            }
+            if (chunk) onChunk(chunk);
           }
         } finally {
           reader.releaseLock();
         }
-
         return { success: true };
       }
-      
-      // Non-streaming response
       return await response.json();
     } catch (error) {
-      console.error('Failed to send message:', error);
-      return { success: false, error: 'Failed to send message' };
+      console.error('[ChatService] Send failed:', error);
+      return { success: false, error: 'Network communication failure' };
     }
   }
-
   async getMessages(): Promise<ChatResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/messages`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error('Failed to get messages:', error);
-      return { success: false, error: 'Failed to load messages' };
+      console.error('[ChatService] Fetch messages failed:', error);
+      return { success: false, error: 'Synchronization failed' };
     }
   }
-
   async clearMessages(): Promise<ChatResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/clear`, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
+      const response = await fetch(`${this.baseUrl}/clear`, { method: 'DELETE' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error('Failed to clear messages:', error);
-      return { success: false, error: 'Failed to clear messages' };
+      return { success: false, error: 'Clear command failed' };
     }
   }
-
   getSessionId(): string {
     return this.sessionId;
   }
-
-  newSession(): void {
-    this.sessionId = crypto.randomUUID();
-    this.baseUrl = `/api/chat/${this.sessionId}`;
-  }
-
   switchSession(sessionId: string): void {
     this.sessionId = sessionId;
+    localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
     this.baseUrl = `/api/chat/${sessionId}`;
   }
-
-  // Session Management Methods
   async createSession(title?: string, sessionId?: string, firstMessage?: string): Promise<{ success: boolean; data?: { sessionId: string; title: string }; error?: string }> {
     try {
       const response = await fetch('/api/sessions', {
@@ -125,129 +91,50 @@ class ChatService {
       });
       return await response.json();
     } catch (error) {
-      return { success: false, error: 'Failed to create session' };
+      return { success: false, error: 'Session creation failed' };
     }
   }
-
   async listSessions(): Promise<{ success: boolean; data?: SessionInfo[]; error?: string }> {
     try {
       const response = await fetch('/api/sessions');
       return await response.json();
     } catch (error) {
-      return { success: false, error: 'Failed to list sessions' };
+      return { success: false, error: 'List retrieval failed' };
     }
   }
-
-  async deleteSession(sessionId: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
-      return await response.json();
-    } catch (error) {
-      return { success: false, error: 'Failed to delete session' };
-    }
-  }
-
-  async updateSessionTitle(sessionId: string, title: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}/title`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title })
-      });
-      return await response.json();
-    } catch (error) {
-      return { success: false, error: 'Failed to update session title' };
-    }
-  }
-
-  async clearAllSessions(): Promise<{ success: boolean; data?: { deletedCount: number }; error?: string }> {
-    try {
-      const response = await fetch('/api/sessions', { method: 'DELETE' });
-      return await response.json();
-    } catch (error) {
-      return { success: false, error: 'Failed to clear all sessions' };
-    }
-  }
-
-  async updateModel(model: string): Promise<ChatResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/model`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to update model:', error);      return { success: false, error: 'Failed to update model' };
-    }
-  }
-
   async saveToMemory(content: string): Promise<ChatResponse> {
     try {
-      const firstSentence = content.split('.')[0].slice(0, 50) + '...';
-      return await this.createSession(
-        `Memory: ${firstSentence}`,
-        undefined,
-        content
-      );
+      const preview = content.split('.')[0].slice(0, 40) + '...';
+      const res = await this.createSession(`Memory: ${preview}`, undefined, content);
+      if (res.success && res.data) {
+        // Return dummy ChatState to satisfy TypeScript/Interface requirements
+        return { 
+          success: true, 
+          data: { 
+            messages: [], 
+            sessionId: res.data.sessionId, 
+            isProcessing: false, 
+            model: MODELS[0].id 
+          } 
+        };
+      }
+      return { success: false, error: res.error };
     } catch (error) {
-      console.error('Failed to save to memory:', error);
-      return { success: false, error: 'Failed to save insight' };
+      return { success: false, error: 'Memory storage failure' };
     }
   }
 }
 export const chatService = new ChatService();
-
 export const formatTime = (timestamp: number): string => {
-  return new Date(timestamp).toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
-
-export const generateSessionTitle = (firstUserMessage?: string): string => {
-  const now = new Date();
-  const dateTime = now.toLocaleString([], {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
-  if (!firstUserMessage || !firstUserMessage.trim()) {
-    return `Chat ${dateTime}`;
-  }
-
-  // Clean and truncate the message
-  const cleanMessage = firstUserMessage.trim().replace(/\s+/g, ' ');
-  const truncated = cleanMessage.length > 40 
-    ? cleanMessage.slice(0, 37) + '...' 
-    : cleanMessage;
-
-  return `${truncated} • ${dateTime}`;
-};export const renderToolCall = (toolCall: ToolCall): string => {
+export const renderToolCall = (toolCall: ToolCall): string => {
   const result = toolCall.result as WeatherResult | MCPResult | ErrorResult | undefined;
   const name = toolCall.name;
-  const friendlyName = name === 'web_search' ? 'Medical Search' : 
-                       name === 'get_weather' ? 'Env Analysis' : 
+  const friendlyName = name === 'web_search' ? 'Clinical Search' :
+                       name === 'get_weather' ? 'Environment' :
                        name.replace(/_/g, ' ');
-
   if (!result) return `⌛ ${friendlyName}`;
   if ('error' in result) return `⚠️ ${friendlyName} Error`;
-  
-  if (toolCall.name === 'get_weather') {
-    const weather = result as WeatherResult;
-    return `🌡️ ${weather.location}: ${weather.temperature}°C, ${weather.condition}`;
-  }
-
-  if (toolCall.name === 'web_search') {
-    return `🔍 Search Complete`;
-  }
-
   return `✅ ${friendlyName}`;
 };
