@@ -31,7 +31,8 @@ class ChatService {
         body: JSON.stringify({ message, model, stream: !!onChunk }),
       });
       if (!response.ok) {
-        console.error(`[ChatService] HTTP Error: ${response.status}`);
+        const errorBody = await response.text().catch(() => '');
+        console.error(`[ChatService] HTTP Error: ${response.status} ${errorBody}`);
         throw new Error(`HTTP ${response.status}`);
       }
       if (onChunk && response.body) {
@@ -47,7 +48,10 @@ class ChatService {
         } finally {
           reader.releaseLock();
         }
-        return { success: true };
+        return {
+          success: true,
+          data: { messages: [], sessionId: this.sessionId, isProcessing: false, model: MODELS[0].id }
+        };
       }
       return await response.json();
     } catch (error) {
@@ -58,11 +62,28 @@ class ChatService {
   async getMessages(): Promise<ChatResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/messages`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => '');
+        console.error(`[ChatService] Fetch messages failed: ${response.status} ${errorBody}`);
+        if (response.status === 404) {
+          await this.createSession();
+          const retryResponse = await fetch(`${this.baseUrl}/messages`);
+          if (retryResponse.ok) {
+            return await retryResponse.json();
+          }
+        }
+        return {
+          success: true,
+          data: { messages: [], sessionId: this.sessionId, isProcessing: false, model: MODELS[0].id }
+        };
+      }
       return await response.json();
     } catch (error) {
       console.error('[ChatService] Fetch messages failed:', error);
-      return { success: false, error: 'Synchronization failed' };
+      return {
+        success: true,
+        data: { messages: [], sessionId: this.sessionId, isProcessing: false, model: MODELS[0].id }
+      };
     }
   }
   async clearMessages(): Promise<ChatResponse> {
@@ -82,7 +103,11 @@ class ChatService {
     localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
     this.baseUrl = `/api/chat/${sessionId}`;
   }
-  async createSession(title?: string, sessionId?: string, firstMessage?: string): Promise<{ success: boolean; data?: { sessionId: string; title: string }; error?: string }> {
+  async createSession(
+    title?: string,
+    sessionId?: string,
+    firstMessage?: string
+  ): Promise<{ success: boolean; data?: { sessionId: string; title: string }; error?: string }> {
     try {
       const response = await fetch('/api/sessions', {
         method: 'POST',
@@ -107,15 +132,14 @@ class ChatService {
       const preview = content.split('.')[0].slice(0, 40) + '...';
       const res = await this.createSession(`Memory: ${preview}`, undefined, content);
       if (res.success && res.data) {
-        // Return dummy ChatState to satisfy TypeScript/Interface requirements
-        return { 
-          success: true, 
-          data: { 
-            messages: [], 
-            sessionId: res.data.sessionId, 
-            isProcessing: false, 
-            model: MODELS[0].id 
-          } 
+        return {
+          success: true,
+          data: {
+            messages: [],
+            sessionId: res.data.sessionId,
+            isProcessing: false,
+            model: MODELS[0].id
+          }
         };
       }
       return { success: false, error: res.error };
@@ -131,9 +155,12 @@ export const formatTime = (timestamp: number): string => {
 export const renderToolCall = (toolCall: ToolCall): string => {
   const result = toolCall.result as WeatherResult | MCPResult | ErrorResult | undefined;
   const name = toolCall.name;
-  const friendlyName = name === 'web_search' ? 'Clinical Search' :
-                       name === 'get_weather' ? 'Environment' :
-                       name.replace(/_/g, ' ');
+  const friendlyName =
+    name === 'web_search'
+      ? 'Clinical Search'
+      : name === 'get_weather'
+      ? 'Environment'
+      : name.replace(/_/g, ' ');
   if (!result) return `⌛ ${friendlyName}`;
   if ('error' in result) return `⚠️ ${friendlyName} Error`;
   return `✅ ${friendlyName}`;

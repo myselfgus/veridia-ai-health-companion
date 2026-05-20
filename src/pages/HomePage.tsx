@@ -57,8 +57,18 @@ export function HomePage() {
     if (res.success && res.data) setSessions(res.data);
   };
   const loadMessages = async () => {
-    const res = await chatService.getMessages();
-    if (res.success && res.data) setMessages(res.data.messages);
+    try {
+      const res = await chatService.getMessages();
+      if (res.success && res.data) {
+        setMessages(res.data.messages || []);
+      } else {
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      toast.error('Unable to load conversation history');
+      setMessages([]);
+    }
   };
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -179,11 +189,11 @@ export function HomePage() {
                     <p className="text-muted-foreground max-w-sm">Ask about symptoms, wellness, or clinical data.</p>
                   </motion.div>
                 )}
-                {messages.map((msg, idx) => (
-                  <div key={msg.id || `msg-${idx}`} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                {messages.map((msg) => (
+                  <div key={msg.id} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
                     <div className="flex flex-col gap-2 max-w-[85%] md:max-w-[70%]">
-                      {msg.toolCalls?.map((tc, tcIdx) => (
-                        <Badge key={`${tc.id}-${tcIdx}`} variant="secondary" className="w-fit text-[10px] py-0.5">{renderToolCall(tc)}</Badge>
+                      {msg.toolCalls?.map((tc) => (
+                        <Badge key={tc.id} variant="secondary" className="w-fit text-[10px] py-0.5">{renderToolCall(tc)}</Badge>
                       ))}
                       <div className={cn("rounded-2xl p-4 text-sm shadow-sm", msg.role === 'user' ? "bg-emerald-600 text-white rounded-tr-none" : "bg-white dark:bg-slate-800 border text-foreground rounded-tl-none")}>
                         {msg.content}
@@ -206,11 +216,17 @@ export function HomePage() {
                   </div>
                 )}
                 {isProcessing && !streamingContent && (
-                  <div className="flex justify-start">
-                    <div className="bg-white dark:bg-slate-800 border rounded-2xl rounded-tl-none p-4 flex items-center gap-3 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin text-emerald-500" /> Veridia is analyzing...
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex justify-start"
+                  >
+                    <div className="bg-white dark:bg-slate-800 border rounded-2xl rounded-tl-none p-4 flex items-center gap-3 text-sm text-muted-foreground shadow-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                      <span>Veridia is analyzing...</span>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
               </AnimatePresence>
               <div ref={scrollRef} />
