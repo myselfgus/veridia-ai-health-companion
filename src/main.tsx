@@ -11,9 +11,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
-import { HomePage } from '@/pages/HomePage'
-import { MemoryPage } from '@/pages/MemoryPage'
-import { CellPage } from '@/pages/CellPage'
 import { PatientHomePage } from '@/pages/PatientHomePage'
 const queryClient = new QueryClient();
 const router = createBrowserRouter(
@@ -24,18 +21,8 @@ const router = createBrowserRouter(
       errorElement: <RouteErrorBoundary />,
     },
     {
-      path: "/ops",
-      element: <CellPage />,
-      errorElement: <RouteErrorBoundary />,
-    },
-    {
-      path: "/companion",
-      element: <HomePage />,
-      errorElement: <RouteErrorBoundary />,
-    },
-    {
-      path: "/memory",
-      element: <MemoryPage />,
+      path: "*",
+      element: <PatientHomePage />,
       errorElement: <RouteErrorBoundary />,
     },
   ],
