@@ -16,6 +16,73 @@
 			}
 		]
 	},
+	"d1_databases": [
+		{
+			"binding": "VERIDIA_DB",
+			"database_name": "veridia-cell-1",
+			"migrations_dir": "migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "HEALTH_VAULT",
+			"bucket_name": "veridia-health-vault"
+		}
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "DOCUMENT_QUEUE",
+				"queue": "veridia-document-jobs"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "veridia-document-jobs",
+				"max_batch_size": 5,
+				"max_retries": 5,
+				"dead_letter_queue": "veridia-document-dlq"
+			}
+		]
+	},
+	"workflows": [
+		{
+			"binding": "DOCUMENT_WORKFLOW",
+			"name": "veridia-document-processing",
+			"class_name": "DocumentProcessingWorkflow"
+		}
+	],
+	"ai": {
+		"binding": "AI"
+	},
+	"browser": {
+		"binding": "BROWSER"
+	},
+	"images": {
+		"binding": "IMAGES"
+	},
+	"vectorize": [
+		{
+			"binding": "VECTORIZE",
+			"index_name": "veridia-cell-1"
+		}
+	],
+	"analytics_engine_datasets": [
+		{
+			"binding": "ANALYTICS",
+			"dataset": "veridia_cell_events"
+		}
+	],
+	"ratelimits": [
+		{
+			"name": "PATIENT_RATE_LIMIT",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 120,
+				"period": 60
+			}
+		}
+	],
 	"migrations": [
 		{
 			"tag": "v1",
@@ -34,7 +101,6 @@
 		"enabled": true
 	},
 	"vars": {
-		"CF_AI_BASE_URL": "https://gateway.ai.cloudflare.com/v1/YOUR_ACCOUNT_ID/YOUR_GATEWAY_ID/openai",
-		"CF_AI_API_KEY": "your-cloudflare-api-key"
+		"CF_AI_BASE_URL": "https://gateway.ai.cloudflare.com/v1/YOUR_ACCOUNT_ID/default/openai"
 	}
 }

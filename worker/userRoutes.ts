@@ -3,6 +3,7 @@ import { getAgentByName } from 'agents';
 import { ChatAgent } from './agent';
 import { API_RESPONSES } from './config';
 import { Env, getAppController, registerSession, unregisterSession } from "./core-utils";
+import { registerCellRoutes } from './cell-routes';
 
 /**
  * DO NOT MODIFY THIS FUNCTION. Only for your reference.
@@ -33,6 +34,8 @@ export function coreRoutes(app: Hono<{ Bindings: Env }>) {
 
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
     // Add your routes here
+    registerCellRoutes(app);
+
     /**
      * List all chat sessions
      * GET /api/sessions

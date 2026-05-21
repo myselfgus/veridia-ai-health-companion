@@ -13,11 +13,17 @@ import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { MemoryPage } from '@/pages/MemoryPage'
+import { CellPage } from '@/pages/CellPage'
 const queryClient = new QueryClient();
 const router = createBrowserRouter(
   [
     {
       path: "/",
+      element: <CellPage />,
+      errorElement: <RouteErrorBoundary />,
+    },
+    {
+      path: "/companion",
       element: <HomePage />,
       errorElement: <RouteErrorBoundary />,
     },

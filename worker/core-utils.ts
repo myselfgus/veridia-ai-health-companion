@@ -4,13 +4,42 @@
  */
 import type { AppController } from './app-controller';
 import type { ChatAgent } from './agent';
+import type { DocumentJobMessage } from './types';
+
+type WorkflowBinding<T = unknown> = {
+  create(options?: { id?: string; params?: T }): Promise<{ id: string; status?: () => Promise<unknown> }>;
+  get(id: string): Promise<unknown>;
+};
+
+type RateLimitBinding = {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+};
+
+type SecretsStoreSecretBinding = {
+  get(): Promise<string>;
+};
+
 export interface Env {
     CF_AI_BASE_URL: string;
-    CF_AI_API_KEY: string;
-    SERPAPI_KEY: string;
-    OPENROUTER_API_KEY: string;
+    CF_AI_API_KEY?: string;
+    CF_AI_API_KEY_SECRET?: SecretsStoreSecretBinding;
+    BROWSER_RUN_API_KEY?: SecretsStoreSecretBinding;
+    SERPAPI_KEY?: string;
+    OPENROUTER_API_KEY?: string;
     CHAT_AGENT: DurableObjectNamespace<ChatAgent>;
     APP_CONTROLLER: DurableObjectNamespace<AppController>;
+    VERIDIA_DB?: D1Database;
+    HEALTH_VAULT?: R2Bucket;
+    DOCUMENT_QUEUE?: Queue<DocumentJobMessage>;
+    DOCUMENT_WORKFLOW?: WorkflowBinding<DocumentJobMessage>;
+    AI?: Ai;
+    BROWSER?: unknown;
+    ANALYTICS?: AnalyticsEngineDataset;
+    PATIENT_RATE_LIMIT?: RateLimitBinding;
+    VECTORIZE?: Vectorize;
+    AI_SEARCH?: unknown;
+    IMAGES?: unknown;
+    STREAM?: unknown;
 }
 
 /**

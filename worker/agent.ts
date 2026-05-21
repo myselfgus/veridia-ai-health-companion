@@ -25,9 +25,10 @@ export class ChatAgent extends Agent<Env, ChatState> {
    * Initialize chat handler when agent starts
    */
   async onStart(): Promise<void> {
+    const gatewayKey = this.env.CF_AI_API_KEY || await this.env.CF_AI_API_KEY_SECRET?.get().catch(() => '');
     this.chatHandler = new ChatHandler(
       this.env.CF_AI_BASE_URL ,
-      this.env.CF_AI_API_KEY,
+      gatewayKey || '',
       this.state.model
     );
     

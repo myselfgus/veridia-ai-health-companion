@@ -1,0 +1,5 @@
+# Local-only development values. Production keys must be created with Wrangler
+# secrets or Secrets Store bindings, never committed in wrangler.jsonc vars.
+CF_AI_API_KEY=
+SERPAPI_KEY=
+OPENROUTER_API_KEY=

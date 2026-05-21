@@ -7,7 +7,10 @@ import { Env } from "./core-utils";
 import { API_RESPONSES } from "./config";
 import { ChatAgent } from "./agent";
 import { AppController } from "./app-controller";
+import { processDocumentJob, writeAuditEvent } from "./cell-store";
+import type { DocumentJobMessage } from "./types";
 export { ChatAgent, AppController };
+export { DocumentProcessingWorkflow } from "./workflows";
 export interface ClientErrorReport {
   message: string;
   url: string;
@@ -64,7 +67,7 @@ app.use(
   cors({
     origin: "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Veridia-Patient-Id", "X-Patient-Id"],
   })
 );
 
@@ -135,4 +138,31 @@ export default {
 
     return app.fetch(request, env, ctx);
   },
-} satisfies ExportedHandler<Env>;
+  async queue(batch, env) {
+    for (const message of batch.messages) {
+      const payload = message.body as DocumentJobMessage;
+      try {
+        if (env.DOCUMENT_WORKFLOW) {
+          await env.DOCUMENT_WORKFLOW.create({
+            id: `document-${payload.jobId}`,
+            params: payload,
+          });
+        } else {
+          await processDocumentJob(env, payload);
+        }
+        await writeAuditEvent(env, payload.patientId, 'document.queue', 'DOCUMENT_QUEUE', 'ok', {
+          documentId: payload.documentId,
+          jobId: payload.jobId,
+        });
+        message.ack();
+      } catch (error) {
+        await writeAuditEvent(env, payload.patientId, 'document.queue', 'DOCUMENT_QUEUE', 'failed', {
+          documentId: payload.documentId,
+          jobId: payload.jobId,
+          error: error instanceof Error ? error.message : String(error),
+        }).catch(() => undefined);
+        message.retry();
+      }
+    }
+  },
+} satisfies ExportedHandler<Env, DocumentJobMessage>;
