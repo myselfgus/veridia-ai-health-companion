@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "veridia-health-h0ul8rgj1drwlm7ubpxfo",
+	"name": "veridia-ai",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"compatibility_flags": ["nodejs_compat"],
@@ -23,7 +23,7 @@
 		},
 		{
 			"tag": "v2",
-			"new_classes": ["AppController"]
+			"new_sqlite_classes": ["AppController"]
 		}
 	],
 	"assets": {
