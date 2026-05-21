@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Activity,
   Archive,
@@ -366,148 +367,93 @@ export function PatientHomePage() {
       );
     }
 
-    const firstName = summary.patient.displayName === 'Demo Patient'
-      ? 'Gustavo'
-      : summary.patient.displayName.split(' ')[0] || 'Gustavo';
-
     return (
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="veridia-display text-4xl leading-none tracking-normal sm:text-5xl">Bom dia, {firstName}</h1>
-              <p className="mt-3 text-sm text-neutral-500">Seu bem-estar e unico. Seu cuidado tambem.</p>
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_370px]">
+        <div className="flex flex-col gap-5">
+          <div className="veridia-hero p-5 sm:p-8 lg:p-10">
+            <div className="max-w-3xl">
+              <div className="flex items-center gap-3 text-sm text-neutral-500">
+                <span>{new Date().toLocaleDateString([], { weekday: 'long', day: '2-digit', month: 'long' })}</span>
+                <span className="size-1 rounded-full bg-neutral-300" />
+                <span>Seu espaco privado de saude</span>
+              </div>
+              <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-normal sm:text-6xl">
+                Bom dia, {summary.patient.displayName.split(' ')[0] || 'Gustavo'}.
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-neutral-600">
+                O Veridia junta conversa, documentos, memoria e plano semanal para transformar saude em proximos passos claros.
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="h-10 rounded-xl border-neutral-200 bg-white" onClick={connectChatGPT}>
-                <Sparkles className="size-4" />
-                Conectar ChatGPT
-              </Button>
-              <Button variant="outline" size="icon" className="h-10 w-10 rounded-full border-neutral-200 bg-white" onClick={loadPatientSpace}>
-                <RefreshCcw className="size-4" />
-              </Button>
+            <div className="mt-8 rounded-[1.55rem] border border-neutral-200 bg-white p-3 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Input
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') sendCompanionMessage();
+                  }}
+                  placeholder="O que voce quer cuidar agora?"
+                  className="h-12 flex-1 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
+                />
+                <Button className="h-11 rounded-xl" onClick={() => sendCompanionMessage()} disabled={busy || !message.trim()}>
+                  Conversar
+                  <ArrowRight className="size-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="veridia-hero relative overflow-hidden p-6 sm:p-10">
-            <div className="pointer-events-none absolute right-0 top-0 h-44 w-52 rounded-bl-[7rem] bg-[radial-gradient(circle_at_center,rgba(116,150,115,0.18),transparent_68%)]" />
-            <div className="mx-auto max-w-2xl text-center">
-              <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-white/70 shadow-sm">
-                <LeafMark />
-              </div>
-              <h2 className="veridia-display mt-8 text-4xl leading-[1.05] tracking-normal sm:text-5xl">O que voce quer cuidar agora?</h2>
-              <div className="mx-auto mt-7 max-w-xl rounded-2xl border border-neutral-200 bg-white/88 p-2 shadow-lg shadow-neutral-950/[0.06]">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={message}
-                    onChange={(event) => setMessage(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') sendCompanionMessage();
-                    }}
-                    placeholder="Fale com a Veridia..."
-                    className="h-12 flex-1 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
-                  />
-                  <Button size="icon" className="h-10 w-10 rounded-full bg-white text-neutral-500 shadow-sm hover:bg-neutral-50" variant="outline" onClick={() => sendCompanionMessage()} disabled={busy || !message.trim()}>
-                    <ArrowRight className="size-4" />
-                  </Button>
-                </div>
-              </div>
-              <p className="mt-4 text-xs text-neutral-400">Veridia pode errar. Sempre confirme com seu profissional de saude.</p>
-            </div>
+          <div className="grid grid-cols-3 gap-2 md:gap-4">
+            <ActionCard icon={Upload} title="Guardar exame" detail="Envie um PDF ou imagem para o cofre." onClick={() => fileInputRef.current?.click()} />
+            <ActionCard icon={CalendarDays} title="Preparar consulta" detail="Transforme duvidas em perguntas." onClick={() => sendCompanionMessage('Me ajude a preparar minha proxima consulta.')} />
+            <ActionCard icon={HeartPulse} title="Check-in" detail="Registre como voce esta hoje." onClick={() => setActive('journey')} />
           </div>
 
-          <section className="veridia-panel relative overflow-hidden p-5">
-            <div className="absolute bottom-0 right-0 hidden h-32 w-64 bg-[linear-gradient(135deg,transparent,rgba(89,137,113,0.18))] md:block" />
-            <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="flex items-center gap-3 text-sm font-medium text-emerald-700">
-                  <HeartPulse className="size-4" />
-                  Plano ativo
-                </div>
-                <h3 className="veridia-display mt-4 text-2xl">Equilibrio e energia</h3>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-neutral-500">Sono, alimentacao e movimento para mais disposicao no dia a dia.</p>
-                <div className="mt-5 grid gap-2 text-sm text-neutral-600 sm:grid-cols-2">
-                  <span className="flex items-center gap-2"><Clock3 className="size-4" />3 habitos em progresso</span>
-                  <span className="flex items-center gap-2"><CalendarDays className="size-4" />Proxima revisao em 7 dias</span>
-                </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <GlassBlock title="Plano ativo" icon={Check}>
+              <p className="text-sm leading-6 text-neutral-600">{summary.activePlan}</p>
+              <div className="mt-5 flex flex-col gap-3">
+                {summary.therapy.weeklyPlan.slice(0, 3).map((step) => (
+                  <div key={step} className="flex items-start gap-3 rounded-2xl bg-neutral-50 p-3">
+                    <Check className="mt-0.5 size-4 text-emerald-600" />
+                    <span className="text-sm leading-5 text-neutral-700">{step}</span>
+                  </div>
+                ))}
               </div>
-              <Button variant="outline" className="relative h-10 rounded-xl bg-white" onClick={() => setActive('journey')}>Ver plano</Button>
-            </div>
-          </section>
-
-          <section className="veridia-panel p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Documentos recentes</h3>
-              <button className="text-xs font-medium text-emerald-700" onClick={() => setActive('files')}>Ver todos</button>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {vault.slice(0, 4).map((item) => (
-                <button key={item.id} className="rounded-xl border border-neutral-200 bg-white p-3 text-left transition hover:border-emerald-600" onClick={() => setActive('files')}>
-                  <FileText className="size-5 text-neutral-700" />
-                  <div className="mt-3 truncate text-xs font-medium">{item.filename}</div>
-                  <div className="mt-1 text-[11px] text-neutral-400">{getFileTone(item)}</div>
-                </button>
-              ))}
-              {vault.length === 0 && (
-                <button className="rounded-xl border border-dashed border-neutral-200 bg-white p-4 text-left text-sm text-neutral-500 sm:col-span-2 xl:col-span-4" onClick={() => fileInputRef.current?.click()}>
-                  Envie seu primeiro exame, receita ou PDF de saude.
-                </button>
-              )}
-            </div>
-          </section>
-
-          <section className="veridia-panel p-5">
-            <h3 className="text-sm font-semibold">Proximos passos</h3>
-            <div className="mt-4 flex flex-col gap-2">
-              <NextStep number="1" title="Check-in rapido" detail="Como voce tem se sentido nas ultimas 24 horas?" onClick={() => setActive('journey')} />
-              <NextStep number="2" title="Enviar novos documentos" detail="Compartilhe exames, receitas ou relatorios." onClick={() => fileInputRef.current?.click()} />
-            </div>
-          </section>
-
-          <div className="rounded-2xl border border-neutral-200 bg-white/60 p-4 text-sm text-neutral-500">
-            <LockKeyhole className="mr-2 inline size-4" />
-            Sua privacidade importa. Seus dados sao protegidos e nunca compartilhados sem permissao.
+            </GlassBlock>
+            <GlassBlock title="Recentes" icon={Clock3}>
+              <div className="flex flex-col gap-3">
+                {summary.recentTimeline.slice(0, 3).map((item) => (
+                  <button key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-3 text-left" onClick={() => setActive('journey')}>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium">{item.title}</span>
+                      <span className="mt-1 line-clamp-1 text-sm text-neutral-500">{item.summary}</span>
+                    </span>
+                    <ChevronRight className="size-4 shrink-0 text-neutral-400" />
+                  </button>
+                ))}
+                {summary.recentTimeline.length === 0 && <EmptyHuman text="Sem eventos recentes ainda." />}
+              </div>
+            </GlassBlock>
           </div>
         </div>
 
         <aside className="flex flex-col gap-4">
-          <section className="veridia-panel p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Seu estado hoje</h3>
-              <ShieldCheck className="size-4 text-neutral-400" />
+          <GlassBlock title="Seu estado hoje" icon={HeartPulse}>
+            <div className="grid grid-cols-3 gap-2">
+              <Signal label="Humor" value={summary.therapy.lastCheckin?.mood ? `${summary.therapy.lastCheckin.mood}/10` : 'novo'} />
+              <Signal label="Sono" value={summary.therapy.lastCheckin?.sleepHours ? `${summary.therapy.lastCheckin.sleepHours}h` : 'novo'} />
+              <Signal label="Stress" value={summary.therapy.lastCheckin?.stress ? `${summary.therapy.lastCheckin.stress}/10` : 'novo'} />
             </div>
-            <div className="flex flex-col gap-3">
-              <StateRow label="Humor" value={summary.therapy.lastCheckin?.mood ? `${summary.therapy.lastCheckin.mood}/10` : 'Calmo'} subvalue={summary.therapy.lastCheckin?.mood ? 'registrado' : '8/10'} icon="smile" />
-              <StateRow label="Sono" value={summary.therapy.lastCheckin?.sleepHours ? `${summary.therapy.lastCheckin.sleepHours}h` : '7h 15min'} subvalue="Bom" icon="moon" />
-              <StateRow label="Estresse" value={summary.therapy.lastCheckin?.stress ? `${summary.therapy.lastCheckin.stress}/10` : 'Baixo'} subvalue={summary.therapy.lastCheckin?.stress ? 'registrado' : '3/10'} icon="leaf" />
-            </div>
-          </section>
-
-          <section className="veridia-panel p-4">
-            <div className="mb-3">
-              <h3 className="text-sm font-semibold">Plano da semana</h3>
-              <p className="mt-1 text-xs text-neutral-500">2 de 5 concluidas</p>
-            </div>
-            <Progress value={40} className="mb-4 h-2" />
-            <div className="flex flex-col gap-3">
-              {summary.therapy.weeklyPlan.slice(0, 5).map((step, index) => (
-                <div key={step} className="flex items-start gap-3">
-                  <span className={cn('mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border', index < 2 ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-neutral-300 text-transparent')}>
-                    <Check className="size-3" />
-                  </span>
-                  <div>
-                    <div className="text-sm leading-4">{step}</div>
-                    <div className="mt-1 text-[11px] text-neutral-400">Todos os dias</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="veridia-quote">
-            <p className="veridia-display text-xl italic leading-8">Pequenas escolhas diarias criam grandes transformacoes.</p>
-            <p className="mt-6 text-xs text-neutral-500">Veridia</p>
-          </section>
+            <Progress value={readiness} className="mt-5" />
+            <p className="mt-3 text-xs leading-5 text-neutral-500">Sistema de apoio pronto para conversa, arquivos, pesquisa e jornada. Cofre R2 entra quando a conta Cloudflare liberar.</p>
+          </GlassBlock>
+          <GlassBlock title="Privacidade" icon={ShieldCheck}>
+            <p className="text-sm leading-6 text-neutral-600">
+              Seus dados ficam separados por paciente. Exportacao e controles de arquivo ja estao disponiveis; identidade real vem na fase de auth.
+            </p>
+          </GlassBlock>
+          <ChatGPTBlock linked={chatgptLinked} onConnect={connectChatGPT} />
         </aside>
       </section>
     );
@@ -529,11 +475,12 @@ export function PatientHomePage() {
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-neutral-200/80 bg-white/72 px-5 py-5 backdrop-blur-xl lg:flex lg:flex-col">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white shadow-sm">
-                <LeafMark />
+              <div className="flex size-10 items-center justify-center rounded-2xl bg-neutral-950 text-white">
+                <Activity className="size-5" />
               </div>
               <div>
-                <div className="veridia-display text-2xl leading-none">Veridia</div>
+                <div className="text-sm font-semibold">Veridia</div>
+                <div className="text-xs text-neutral-500">AI health companion</div>
               </div>
             </div>
             <ThemeToggle className="relative static" />
@@ -543,22 +490,25 @@ export function PatientHomePage() {
               <NavButton key={item.id} item={item} selected={active === item.id} onClick={() => setActive(item.id)} />
             ))}
           </nav>
-          <div className="mt-auto overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4">
-            <div className="h-20 rounded-xl bg-[radial-gradient(circle_at_20%_20%,rgba(62,142,96,0.24),transparent_34%),linear-gradient(135deg,#f8fbf8,#edf6f1)]" />
-            <div className="mt-4 text-sm font-medium">Veridia cuida com voce.</div>
-            <p className="mt-2 text-xs leading-5 text-neutral-500">Privado, seguro e feito para a sua saude.</p>
-            <Button variant="outline" className="mt-4 h-9 w-full rounded-xl bg-white text-xs">Saiba mais</Button>
+          <div className="mt-auto rounded-2xl border border-neutral-200 bg-white p-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <LockKeyhole className="size-4" />
+              Espaco seguro
+            </div>
+            <p className="mt-2 text-xs leading-5 text-neutral-500">
+              Interface do paciente. Console tecnico em <Link to="/ops" className="text-neutral-950 underline">/ops</Link>.
+            </p>
           </div>
         </aside>
 
         <main className="min-w-0 flex-1 px-4 pb-24 pt-4 sm:px-6 lg:px-8 lg:py-6">
           <header className="mb-5 flex items-center justify-between gap-3 rounded-[1.25rem] border border-neutral-200 bg-white/80 px-4 py-3 backdrop-blur-xl lg:hidden">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl bg-white shadow-sm">
-                <LeafMark />
+              <div className="flex size-10 items-center justify-center rounded-2xl bg-neutral-950 text-white">
+                <Activity className="size-5" />
               </div>
               <div>
-                <div className="veridia-display text-xl leading-none">Veridia</div>
+                <div className="text-sm font-semibold">Veridia</div>
                 <div className="text-xs text-neutral-500">Hoje</div>
               </div>
             </div>
