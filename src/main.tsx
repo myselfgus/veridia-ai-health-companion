@@ -14,11 +14,17 @@ import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { MemoryPage } from '@/pages/MemoryPage'
 import { CellPage } from '@/pages/CellPage'
+import { PatientHomePage } from '@/pages/PatientHomePage'
 const queryClient = new QueryClient();
 const router = createBrowserRouter(
   [
     {
       path: "/",
+      element: <PatientHomePage />,
+      errorElement: <RouteErrorBoundary />,
+    },
+    {
+      path: "/ops",
       element: <CellPage />,
       errorElement: <RouteErrorBoundary />,
     },

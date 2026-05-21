@@ -106,4 +106,24 @@
   .focus-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
+
+  .veridia-panel {
+    @apply rounded-[1.5rem] border border-neutral-200/80 bg-white/[0.78] shadow-sm shadow-neutral-950/[0.03] backdrop-blur-xl;
+  }
+
+  .veridia-hero {
+    @apply rounded-[1.7rem] border border-neutral-200/80 bg-white/[0.82] shadow-sm shadow-neutral-950/[0.04] backdrop-blur-xl;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 250, 247, 0.78)),
+      radial-gradient(circle at 92% 10%, rgba(113, 188, 164, 0.18), transparent 34%),
+      radial-gradient(circle at 6% 90%, rgba(91, 141, 196, 0.12), transparent 30%);
+  }
+
+  .veridia-tile {
+    @apply rounded-[1.25rem] border border-neutral-200 bg-white/[0.86] p-4 shadow-sm shadow-neutral-950/[0.025] transition hover:-translate-y-0.5 hover:border-neutral-900 hover:shadow-md hover:shadow-neutral-950/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950;
+  }
+
+  .veridia-row {
+    @apply flex flex-col gap-4 rounded-[1.25rem] border border-neutral-200 bg-white/[0.84] p-4 shadow-sm shadow-neutral-950/[0.025] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between;
+  }
 }
