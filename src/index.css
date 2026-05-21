@@ -86,6 +86,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     text-rendering: optimizeLegibility;
   }
@@ -107,23 +108,52 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
-  .veridia-panel {
-    @apply rounded-[1.5rem] border border-neutral-200/80 bg-white/[0.78] shadow-sm shadow-neutral-950/[0.03] backdrop-blur-xl;
+  .veridia-display {
+    font-family: ui-serif, "New York", "Iowan Old Style", "Georgia", serif;
+    letter-spacing: 0;
   }
 
-  .veridia-hero {
-    @apply rounded-[1.7rem] border border-neutral-200/80 bg-white/[0.82] shadow-sm shadow-neutral-950/[0.04] backdrop-blur-xl;
+  .veridia-main-grid {
+    @apply grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px];
+  }
+
+  .veridia-panel {
+    @apply rounded-[1.15rem] border border-neutral-200/80 bg-white/[0.78] shadow-sm shadow-neutral-950/[0.03] backdrop-blur-xl;
+  }
+
+  .veridia-hero-card {
+    @apply relative overflow-hidden rounded-[1.15rem] border border-neutral-200/80 bg-white/[0.82] px-5 py-10 shadow-sm shadow-neutral-950/[0.04] backdrop-blur-xl sm:px-10 sm:py-14;
     background:
       linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 250, 247, 0.78)),
       radial-gradient(circle at 92% 10%, rgba(113, 188, 164, 0.18), transparent 34%),
       radial-gradient(circle at 6% 90%, rgba(91, 141, 196, 0.12), transparent 30%);
   }
 
-  .veridia-tile {
-    @apply rounded-[1.25rem] border border-neutral-200 bg-white/[0.86] p-4 shadow-sm shadow-neutral-950/[0.025] transition hover:-translate-y-0.5 hover:border-neutral-900 hover:shadow-md hover:shadow-neutral-950/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950;
+  .veridia-plan-card {
+    @apply relative overflow-hidden rounded-[1.15rem] border border-neutral-200/80 bg-white/[0.78] p-5 shadow-sm shadow-neutral-950/[0.03] backdrop-blur-xl;
+  }
+
+  .veridia-plan-card::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 auto;
+    width: 42%;
+    height: 100%;
+    background:
+      linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1)),
+      radial-gradient(circle at 30% 75%, rgba(63, 122, 87, 0.22), transparent 36%),
+      linear-gradient(135deg, transparent 20%, rgba(78, 127, 101, 0.18));
+    clip-path: polygon(0 62%, 100% 32%, 100% 100%, 0 100%);
   }
 
   .veridia-row {
-    @apply flex flex-col gap-4 rounded-[1.25rem] border border-neutral-200 bg-white/[0.84] p-4 shadow-sm shadow-neutral-950/[0.025] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between;
+    @apply flex flex-col gap-4 rounded-[1.15rem] border border-neutral-200 bg-white/[0.84] p-4 shadow-sm shadow-neutral-950/[0.025] backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .veridia-quote {
+    @apply rounded-[1.15rem] border border-neutral-200/80 bg-white/[0.78] p-6 shadow-sm shadow-neutral-950/[0.03] backdrop-blur-xl;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(237, 247, 245, 0.82)),
+      radial-gradient(circle at 15% 100%, rgba(84, 141, 147, 0.18), transparent 38%);
   }
 }
