@@ -24,6 +24,12 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "HEALTH_VAULT",
+			"bucket_name": "veridia-health-vault"
+		}
+	],
 	"queues": {
 		"producers": [
 			{
@@ -60,6 +66,12 @@
 		{
 			"binding": "VECTORIZE",
 			"index_name": "veridia-cell-1"
+		}
+	],
+	"analytics_engine_datasets": [
+		{
+			"binding": "ANALYTICS",
+			"dataset": "veridia_cell_events"
 		}
 	],
 	"ratelimits": [
